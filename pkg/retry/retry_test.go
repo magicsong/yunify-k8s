@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/magicsong/yunify-k8s/pkg/retry"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/magicsong/yunify-k8s/pkg/retry"
 )
 
 var _ = Describe("Retry", func() {

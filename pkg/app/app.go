@@ -1,8 +1,10 @@
 package app
 
 import (
+	"bytes"
 	"fmt"
 	"io/ioutil"
+	"strings"
 	"sync"
 	"time"
 
@@ -11,6 +13,7 @@ import (
 	"github.com/magicsong/yunify-k8s/pkg/instance"
 	"github.com/magicsong/yunify-k8s/pkg/ssh"
 	"github.com/magicsong/yunify-k8s/pkg/sshkey"
+	"github.com/magicsong/yunify-k8s/pkg/tag"
 	"k8s.io/klog"
 )
 
@@ -26,10 +29,15 @@ func NewApp() App {
 type app struct {
 	instanceIface instance.Interface
 	sshKeyIface   sshkey.Interface
+	tagService    tag.Interface
 }
 
 func (a *app) RunDelete() error {
 	return nil
+}
+
+func tagName(name string) string {
+	return fmt.Sprintf("K8S-Cluster-%s", name)
 }
 
 func (a *app) validateCreateInput(opt *api.CreateClusterOption) error {
@@ -70,6 +78,8 @@ func (a *app) init(zone string) error {
 	a.instanceIface = instance.NewQingCloudInstanceService(instanceService, jobService)
 	keyService, _ := qcService.KeyPair(zone)
 	a.sshKeyIface = sshkey.NewQingCloudKeyPairService(keyService, userid)
+	tagService, _ := qcService.Tag(zone)
+	a.tagService = tag.NewQingCloudTagService(tagService, userid)
 	return nil
 }
 
@@ -95,6 +105,23 @@ func (a *app) prepareSSHKey(useExistKey bool) (string, error) {
 }
 
 func (a *app) runCreate(opt *api.CreateClusterOption) error {
+	klog.Info("Prepare Tag")
+	tag := tagName(opt.ClusterName)
+	id, err := a.tagService.GetTagClusterByName(tag)
+	if err != nil {
+		klog.Error("Failed to get current tag")
+		return err
+	}
+	var tagID string
+	if id != nil {
+		tagID = id.TagID
+	} else {
+		tagID, err = a.tagService.CreateTag(tag)
+		if err != nil {
+			klog.Errorf("Failed to create tag %s", tag)
+			return err
+		}
+	}
 	klog.Info("Prepare ssh key")
 	keyid, err := a.prepareSSHKey(opt.UseExistKey)
 	if err != nil {
@@ -106,6 +133,7 @@ func (a *app) runCreate(opt *api.CreateClusterOption) error {
 	if _, ok := instance.PresetKubernetes[opt.KubernetesVersion]; !ok {
 		return fmt.Errorf(api.ErrorK8sVersionNotSupport, opt.KubernetesVersion)
 	}
+	machines := []string{}
 	wg.Add(1)
 	var master *instance.Instance
 	errs := make([]error, 0)
@@ -126,6 +154,7 @@ func (a *app) runCreate(opt *api.CreateClusterOption) error {
 			return
 		}
 		master = instances[0]
+		machines = append(machines, master.ID)
 		klog.Infof("Master creating done, id=%s, ip=%s", master.ID, master.IP)
 	}()
 	//creating nodes
@@ -149,6 +178,7 @@ func (a *app) runCreate(opt *api.CreateClusterOption) error {
 			return
 		}
 		for _, machine := range instances {
+			machines = append(machines, machine.ID)
 			nodes = append(nodes, machine)
 			klog.Infof("Nodes creating done, id=%s, ip=%s", machine.ID, machine.IP)
 		}
@@ -159,37 +189,62 @@ func (a *app) runCreate(opt *api.CreateClusterOption) error {
 	if len(errs) != 0 {
 		return fmt.Errorf("Creating Machines failed, errs: %+v", errs)
 	}
+
+	klog.Infoln("Tagging all machines")
+	err = a.tagService.TagInstances(tagID, machines)
+	if err != nil {
+		return err
+	}
 	klog.Infoln("Machines are ready, bring the cluster up")
-	_, err = bootstrapMaster(master, opt.NetworkOption)
+	_, err = bootstrapMaster(master, opt)
 	if err != nil {
 		klog.Errorln("Failed to bootstrap master node")
 		return err
 	}
+	klog.Info("Apply CNI")
 	return nil
 }
 
-func generateKubeadmInitCmd(opt api.NetworkOption) (string, error) {
+func generateKubeadmInitCmd(opt api.NetworkOption, version string) (string, error) {
 	if opt.PodNetWorkCIDR == "" {
 		return "", fmt.Errorf("Must specify a network for pod")
 	}
 
 	if opt.CNIName == api.CalicoCNI || opt.CNIName == api.FlannelCNI {
-		return fmt.Sprintf("kubeadm init --pod-network-cidr=%s", opt.PodNetWorkCIDR), nil
+		return fmt.Sprintf("kubeadm init --pod-network-cidr=%s --kubernetes-version=v%s", opt.PodNetWorkCIDR, version), nil
 	}
 
 	return "", fmt.Errorf("CNI plugin %s is not supported right now", opt.CNIName)
 }
 
-func bootstrapMaster(master *instance.Instance, opt api.NetworkOption) (string, error) {
-	cmd, err := generateKubeadmInitCmd(opt)
+func bootstrapMaster(master *instance.Instance, opt *api.CreateClusterOption) (string, error) {
+	cmd, err := generateKubeadmInitCmd(opt.NetworkOption, opt.KubernetesVersion)
 	if err != nil {
 		return "", err
 	}
-	output, err := ssh.QuickConnectAndRun(master.IP, cmd)
+	output, err := ssh.QuickConnectAndRun(master.IP, "swapoff -a;"+cmd)
 	defer klog.Infoln(string(output))
 	if err != nil {
 		klog.Errorln("Failed to run 'kubeadm init'")
 		return "", err
 	}
-	return "", nil
+	klog.Info("Getting 'kubeadm join'")
+	return GetKubeJoinFromOutput(string(output)), nil
+}
+
+func buildShellScripts(scripts []string) string {
+	var buf bytes.Buffer
+	buf.WriteString("#!/bin/bash\n")
+	buf.WriteString("swapoff -a\n")
+	for _, s := range scripts {
+		buf.WriteString(s)
+		buf.WriteString("\n")
+	}
+	return buf.String()
+}
+
+func GetKubeJoinFromOutput(output string) string {
+	output = strings.TrimSpace(output)
+	index := strings.LastIndex(output, "kubeadm join")
+	return output[index:]
 }
