@@ -31,13 +31,24 @@ type app struct {
 func (a *app) RunDelete() error {
 	return nil
 }
+
+func (a *app) validateCreateInput(opt *api.CreateClusterOption) error {
+	if opt.ClusterName == "" {
+		return fmt.Errorf("ClusterName cannot be empty")
+	}
+	return nil
+}
 func (a *app) RunCreate(opt *api.CreateClusterOption) error {
 	start := time.Now()
 	defer func() {
 		runningTime := time.Since(start)
 		klog.Infof("Finished, time cost(s): %d", runningTime/time.Second)
 	}()
-	err := a.init(opt.Zone)
+	err := a.validateCreateInput(opt)
+	if err != nil {
+		return err
+	}
+	err = a.init(opt.Zone)
 	if err != nil {
 		klog.Error("Falied to init command")
 		return err
@@ -101,6 +112,7 @@ func (a *app) runCreate(opt *api.CreateClusterOption) error {
 	go func() {
 		defer wg.Done()
 		createMasterOpt := &instance.CreateInstancesOption{
+			Name:          opt.ClusterName,
 			VxNet:         opt.VxNet,
 			Count:         1,
 			Role:          instance.RoleMaster,
@@ -123,6 +135,7 @@ func (a *app) runCreate(opt *api.CreateClusterOption) error {
 	go func() {
 		defer wg.Done()
 		createNodesOpt := &instance.CreateInstancesOption{
+			Name:          opt.ClusterName,
 			VxNet:         opt.VxNet,
 			Count:         opt.NodeCount,
 			Role:          instance.RoleNode,

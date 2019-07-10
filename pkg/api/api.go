@@ -8,6 +8,7 @@ const (
 )
 
 type CreateClusterOption struct {
+	ClusterName       string
 	KubernetesVersion string
 	NodeCount         int
 	VxNet             string

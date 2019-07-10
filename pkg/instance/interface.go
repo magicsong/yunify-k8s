@@ -11,6 +11,7 @@ const (
 )
 
 type CreateInstancesOption struct {
+	Name          string
 	VxNet         string
 	SSHKeyID      string
 	Count         int

@@ -13,7 +13,17 @@ import (
 const (
 	DefaultCreateInstanceWait = time.Minute
 	DefaultRetryCount         = 3
+
+	ClusterNamePrefix = "YUNIFY_K8S_APP"
 )
+
+func GeneateName(clusterName string, role byte) string {
+	roleName := "master"
+	if role == RoleNode {
+		roleName = "node"
+	}
+	return fmt.Sprintf("%s-%s-%s", ClusterNamePrefix, clusterName, roleName)
+}
 
 var log = klogr.New().WithName("Instance")
 
@@ -38,6 +48,7 @@ func (q *qingcloudInstance) CreateInstances(opt *CreateInstancesOption) ([]*Inst
 		LoginKeyPair:  &opt.SSHKeyID,
 		VxNets:        []*string{&opt.VxNet},
 		LoginMode:     service.String("keypair"),
+		InstanceName:  service.String(GeneateName(opt.Name, opt.Role)),
 	}
 	if opt.Role == RoleMaster {
 		input.CPU = &opt.MasterCPU

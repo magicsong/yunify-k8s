@@ -17,6 +17,7 @@ func init() {
 	flag.Set("alsologtostderr", "false")
 
 	createClusterOpt = new(api.CreateClusterOption)
+	flag.StringVar(&createClusterOpt.ClusterName, "name", "", "The name of cluster, must unique in a zone, required")
 	flag.StringVar(&createClusterOpt.KubernetesVersion, "k", "12.4", "specify k8s version of cluster")
 	flag.StringVar(&createClusterOpt.PodNetWorkCIDR, "n", "10.10.0.0/16", "specify PodNetWorkCIDR")
 	flag.IntVar(&createClusterOpt.NodeCount, "c", 2, "specify the number of nodes")
