@@ -68,13 +68,13 @@ func (q *qingcloudInstance) CreateInstances(opt *CreateInstancesOption) ([]*Inst
 		err := fmt.Errorf("Error in creating instances, err: %s", *output.Message)
 		return nil, err
 	}
-	log.Info("Waiting for instance starting")
+	log.V(1).Info("Waiting for instance starting")
 	err = client.WaitJob(q.jobService, *output.JobID, DefaultCreateInstanceWait, time.Second*5)
 	if err != nil {
 		return nil, err
 	}
-	log.Info("Machines starting successfully")
-	log.Info("Waiting for instance getting its ip")
+	log.V(1).Info("Machines starting successfully")
+	log.V(1).Info("Waiting for instance getting its ip")
 	result := make([]*Instance, 0)
 	for _, i := range output.Instances {
 		ins, err := client.WaitInstanceNetwork(q.instanceService, *i, DefaultCreateInstanceWait, time.Second*5)

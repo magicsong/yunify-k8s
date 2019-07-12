@@ -273,7 +273,7 @@ func GetKubeJoinFromOutput(output string) string {
 func applyCNI(cni string, CNIYamlPath string, masterip string) error {
 	cmd := fmt.Sprintf("kubectl --kubeconfig=%s apply -f %s/%s/", KubeconfigFilePath, CNIYamlPath, cni)
 	bytes, err := ssh.QuickConnectAndRun(masterip, cmd)
-	defer klog.Info(string(bytes))
+	defer klog.V(1).Info(string(bytes))
 	if err != nil {
 		return err
 	}
