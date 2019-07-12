@@ -17,6 +17,8 @@ import (
 	"k8s.io/klog"
 )
 
+const KubeconfigFilePath = "/etc/kubernetes/admin.conf"
+
 type App interface {
 	RunCreate(*api.CreateClusterOption) error
 	RunDelete(*api.DeleteClusterOption) error
@@ -136,17 +138,18 @@ func (a *app) runCreate(opt *api.CreateClusterOption) error {
 	wg.Add(1)
 	var master *instance.Instance
 	errs := make([]error, 0)
+	createMasterOpt := &instance.CreateInstancesOption{
+		Name:          opt.ClusterName,
+		VxNet:         opt.VxNet,
+		Count:         1,
+		Role:          instance.RoleMaster,
+		ImagesPreset:  instance.PresetKubernetes[opt.KubernetesVersion],
+		InstanceClass: opt.InstanceClass,
+		SSHKeyID:      keyid,
+	}
+
 	go func() {
 		defer wg.Done()
-		createMasterOpt := &instance.CreateInstancesOption{
-			Name:          opt.ClusterName,
-			VxNet:         opt.VxNet,
-			Count:         1,
-			Role:          instance.RoleMaster,
-			ImagesPreset:  instance.PresetKubernetes[opt.KubernetesVersion],
-			InstanceClass: opt.InstanceClass,
-			SSHKeyID:      keyid,
-		}
 		instances, err := a.instanceIface.CreateInstances(createMasterOpt)
 		if err != nil {
 			errs = append(errs, err)
@@ -195,12 +198,31 @@ func (a *app) runCreate(opt *api.CreateClusterOption) error {
 		return err
 	}
 	klog.Infoln("Machines are ready, bring the cluster up")
-	_, err = bootstrapMaster(master, opt)
+	joinCmd, err := bootstrapMaster(master, opt)
 	if err != nil {
 		klog.Errorln("Failed to bootstrap master node")
 		return err
 	}
-	klog.Info("Apply CNI")
+	klog.Info("Applying CNI")
+	err = applyCNI(opt.CNIName, createMasterOpt.CNIYamlPath, master.IP)
+	if err != nil {
+		klog.Errorf("Failed to apply CNI plugin %s", opt.CNIName)
+		return err
+	}
+	klog.Info("CNI is applied now")
+	klog.Info("Joining nodes")
+	for _, node := range nodes {
+		output, err := ssh.QuickConnectAndRun(node.IP, "swapoff -a; "+joinCmd)
+		if len(output) != 0 {
+			klog.V(1).Info(string(output))
+		}
+		if err != nil {
+			klog.Errorf("Failed to join %s %s to cluster", node.ID, node.IP)
+			return err
+		}
+		klog.Infof("%s has successfully joined the cluster", node.IP)
+	}
+	klog.Infof("Congratulations! The cluster is ready now, the master is [ID: %s,IP: %s], check it out", master.ID, master.IP)
 	return nil
 }
 
@@ -222,7 +244,7 @@ func bootstrapMaster(master *instance.Instance, opt *api.CreateClusterOption) (s
 		return "", err
 	}
 	output, err := ssh.QuickConnectAndRun(master.IP, "swapoff -a;"+cmd)
-	defer klog.Infoln(string(output))
+	defer klog.V(1).Infoln(string(output))
 	if err != nil {
 		klog.Errorln("Failed to run 'kubeadm init'")
 		return "", err
@@ -246,4 +268,14 @@ func GetKubeJoinFromOutput(output string) string {
 	output = strings.TrimSpace(output)
 	index := strings.LastIndex(output, "kubeadm join")
 	return output[index:]
+}
+
+func applyCNI(cni string, CNIYamlPath string, masterip string) error {
+	cmd := fmt.Sprintf("kubectl --kubeconfig=%s apply -f %s/%s/", KubeconfigFilePath, CNIYamlPath, cni)
+	bytes, err := ssh.QuickConnectAndRun(masterip, cmd)
+	defer klog.Info(string(bytes))
+	if err != nil {
+		return err
+	}
+	return nil
 }

@@ -14,7 +14,7 @@ var createClusterOpt *api.CreateClusterOption
 func init() {
 	rootCmd.AddCommand(createCmd)
 	createClusterOpt = new(api.CreateClusterOption)
-	createCmd.Flags().StringVarP(&createClusterOpt.KubernetesVersion, "k8sVersion", "k", "13.1", "specify k8s version of cluster")
+	createCmd.Flags().StringVarP(&createClusterOpt.KubernetesVersion, "k8sVersion", "k", "1.13.1", "specify k8s version of cluster")
 	createCmd.Flags().StringVarP(&createClusterOpt.PodNetWorkCIDR, "podcidr", "p", "10.10.0.0/16", "specify PodNetWorkCIDR")
 	createCmd.Flags().IntVarP(&createClusterOpt.NodeCount, "nodecount", "c", 2, "specify the number of nodes")
 	createCmd.Flags().StringVarP(&createClusterOpt.VxNet, "vxnet", "x", "", "specify the vxnet")

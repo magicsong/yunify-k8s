@@ -3,3 +3,6 @@ fmt:
 
 vet:
 	go vet ./pkg/... ./cmd
+
+release: fmt vet
+	go build -ldflags "-s -w" -o bin/qks

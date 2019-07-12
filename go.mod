@@ -13,3 +13,5 @@ require (
 	k8s.io/client-go v11.0.0+incompatible
 	k8s.io/klog v0.3.3
 )
+
+replace github.com/yunify/qingcloud-sdk-go v2.0.0-alpha.35.0.20190710082549-9b4f4db80863+incompatible => github.com/magicsong/qingcloud-sdk-go v2.0.0-alpha.33.0.20190712132900-6305afc1ddb5+incompatible

@@ -48,7 +48,7 @@ github.com/sirupsen/logrus
 github.com/spf13/cobra
 # github.com/spf13/pflag v1.0.3
 github.com/spf13/pflag
-# github.com/yunify/qingcloud-sdk-go v2.0.0-alpha.35.0.20190710082549-9b4f4db80863+incompatible
+# github.com/yunify/qingcloud-sdk-go v2.0.0-alpha.35.0.20190710082549-9b4f4db80863+incompatible => github.com/magicsong/qingcloud-sdk-go v2.0.0-alpha.33.0.20190712132900-6305afc1ddb5+incompatible
 github.com/yunify/qingcloud-sdk-go/config
 github.com/yunify/qingcloud-sdk-go/service
 github.com/yunify/qingcloud-sdk-go/client
