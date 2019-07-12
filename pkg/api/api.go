@@ -22,3 +22,9 @@ type NetworkOption struct {
 	CNIName        string
 	PodNetWorkCIDR string
 }
+
+type DeleteClusterOption struct {
+	ClusterName string
+	ForceDelete bool
+	Zone        string
+}

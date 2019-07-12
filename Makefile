@@ -1,5 +1,5 @@
 fmt:
-	go fmt ./pkg/... 
+	go fmt ./pkg/... ./cmd
 
 vet:
-	go vet ./pkg/... 
+	go vet ./pkg/... ./cmd

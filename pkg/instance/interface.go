@@ -22,6 +22,6 @@ type CreateInstancesOption struct {
 
 type Interface interface {
 	CreateInstances(*CreateInstancesOption) ([]*Instance, error)
-	DeleteInstance(instanceID string) error
+	DeleteInstances(instanceID []string) error
 	GetInstance(string) (*Instance, error)
 }

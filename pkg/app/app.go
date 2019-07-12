@@ -18,22 +18,21 @@ import (
 )
 
 type App interface {
-	RunCreate(opt *api.CreateClusterOption) error
-	RunDelete() error
+	RunCreate(*api.CreateClusterOption) error
+	RunDelete(*api.DeleteClusterOption) error
 }
 
-func NewApp() App {
-	return &app{}
+func NewApp(configFile string) App {
+	return &app{
+		configFile: configFile,
+	}
 }
 
 type app struct {
 	instanceIface instance.Interface
 	sshKeyIface   sshkey.Interface
 	tagService    tag.Interface
-}
-
-func (a *app) RunDelete() error {
-	return nil
+	configFile    string
 }
 
 func tagName(name string) string {
@@ -66,7 +65,7 @@ func (a *app) RunCreate(opt *api.CreateClusterOption) error {
 
 func (a *app) init(zone string) error {
 	klog.Info("Init qingcloud service")
-	keyHelper := accesskey.NewQingCloudAccessKeyHelper(zone, "")
+	keyHelper := accesskey.NewQingCloudAccessKeyHelper(zone, a.configFile)
 	err := keyHelper.Init()
 	if err != nil {
 		return err

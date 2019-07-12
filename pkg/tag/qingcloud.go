@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/yunify/qingcloud-sdk-go/service"
+	"k8s.io/klog"
 )
 
 type qingcloudTagService struct {
@@ -59,6 +60,7 @@ func (q *qingcloudTagService) GetTagClusterByName(name string) (*TagCluster, err
 	}
 	output, err := q.tagService.DescribeTags(input)
 	if err != nil {
+		klog.Error("Failed to initialize go sdk")
 		return nil, err
 	}
 	if *output.RetCode != 0 {

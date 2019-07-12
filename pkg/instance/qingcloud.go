@@ -125,6 +125,25 @@ func (q *qingcloudInstance) getInstancesWithRetry(ids []*string, retryTimes int)
 	return result, err
 }
 
-func (q *qingcloudInstance) DeleteInstance(instanceID string) error {
+func (q *qingcloudInstance) DeleteInstances(instances []string) error {
+	input := &service.TerminateInstancesInput{
+		Instances: service.StringSlice(instances),
+	}
+	output, err := q.instanceService.TerminateInstances(input)
+	if err != nil {
+		log.Error(err, "error in getting instances, retry again")
+		return err
+	}
+	if *output.RetCode != 0 {
+		err := fmt.Errorf("err: %s", *output.Message)
+		log.Error(err, "error in deleting instances")
+		return err
+	}
+	log.Info("Waiting for instance terminating")
+	err = client.WaitJob(q.jobService, *output.JobID, DefaultCreateInstanceWait, time.Second*5)
+	if err != nil {
+		return err
+	}
+	log.Info("Instances have been terminated")
 	return nil
 }

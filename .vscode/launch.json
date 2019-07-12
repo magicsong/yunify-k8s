@@ -12,7 +12,8 @@
             "program": "${fileDirname}",
             "env": {},
             "args": [
-                "-vxnet=vxnet-59dfakk"
+                "delete",
+                "testk8s"
             ]
         }
     ]
