@@ -15,7 +15,9 @@ type CreateClusterOption struct {
 	InstanceClass     int
 	Zone              string
 	NetworkOption
-	UseExistKey bool
+	UseExistKey          bool
+	ScpKubeConfigToLocal bool
+	LocalKubeConfigPath  string
 }
 
 type NetworkOption struct {

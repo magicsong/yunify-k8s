@@ -15,12 +15,14 @@ func init() {
 	rootCmd.AddCommand(createCmd)
 	createClusterOpt = new(api.CreateClusterOption)
 	createCmd.Flags().StringVarP(&createClusterOpt.KubernetesVersion, "k8sVersion", "k", "1.13.1", "specify k8s version of cluster")
-	createCmd.Flags().StringVarP(&createClusterOpt.PodNetWorkCIDR, "podcidr", "p", "10.10.0.0/16", "specify PodNetWorkCIDR")
+	createCmd.Flags().StringVarP(&createClusterOpt.PodNetWorkCIDR, "podcidr", "p", "10.233.0.0/16", "specify PodNetWorkCIDR")
 	createCmd.Flags().IntVarP(&createClusterOpt.NodeCount, "nodecount", "c", 2, "specify the number of nodes")
 	createCmd.Flags().StringVarP(&createClusterOpt.VxNet, "vxnet", "x", "", "specify the vxnet")
 	createCmd.Flags().StringVar(&createClusterOpt.CNIName, "cni", "calico", "cni plugin to use")
 	createCmd.Flags().IntVar(&createClusterOpt.InstanceClass, "class", 101, "instance class of machine,available values: 0, 1, 2, 3, 4, 5, 6, 100, 101, 200, 201, 300, 301")
 	createCmd.Flags().BoolVar(&createClusterOpt.UseExistKey, "use-old-key", false, "specify whether create or reuse former ssh key to connect cluster")
+	createCmd.Flags().BoolVarP(&createClusterOpt.ScpKubeConfigToLocal, "scp-kubeconfig", "s", false, "specify whether copy kubeconfig to local")
+	createCmd.Flags().StringVar(&createClusterOpt.LocalKubeConfigPath, "kubeconfig-path", ".", "specify the path where kubeconfig copy to")
 	createCmd.MarkFlagRequired("vxnet")
 }
 

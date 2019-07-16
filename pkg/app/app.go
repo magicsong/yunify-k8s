@@ -222,6 +222,16 @@ func (a *app) runCreate(opt *api.CreateClusterOption) error {
 		}
 		klog.Infof("%s has successfully joined the cluster", node.IP)
 	}
+
+	if opt.ScpKubeConfigToLocal {
+		klog.Infoln("Transfer kubeconfig to local")
+		err = transferKubeconfigToLocal(master.IP, opt.LocalKubeConfigPath)
+		if err != nil {
+			klog.Error("Failed to transfer kubeconfig")
+			return err
+		}
+		klog.Infof("kubeconfig has been copied to local, type 'export KUBECONFIG=%s/kubeconfig; kubectl cluster-info' to have a try", opt.LocalKubeConfigPath)
+	}
 	klog.Infof("Congratulations! The cluster is ready now, the master is [ID: %s,IP: %s], check it out", master.ID, master.IP)
 	return nil
 }
@@ -275,6 +285,20 @@ func applyCNI(cni string, CNIYamlPath string, masterip string) error {
 	bytes, err := ssh.QuickConnectAndRun(masterip, cmd)
 	defer klog.V(1).Info(string(bytes))
 	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func transferKubeconfigToLocal(masterip, localPath string) error {
+	bytes, err := ssh.QuickConnectAndRun(masterip, "cat /etc/kubernetes/admin.conf")
+	if err != nil {
+		klog.Errorf(string(bytes))
+		return err
+	}
+	err = ioutil.WriteFile(localPath+"/kubeconfig", bytes, 0600)
+	if err != nil {
+		klog.Error("Failed to write kubeconfig")
 		return err
 	}
 	return nil
