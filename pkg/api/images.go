@@ -1,4 +1,4 @@
-package instance
+package api
 
 var PresetKubernetes map[string]ImagesPreset
 

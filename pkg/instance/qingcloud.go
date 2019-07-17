@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/magicsong/yunify-k8s/pkg/api"
 	"github.com/magicsong/yunify-k8s/pkg/retry"
 	"github.com/yunify/qingcloud-sdk-go/client"
 	"github.com/yunify/qingcloud-sdk-go/service"
@@ -19,7 +20,7 @@ const (
 
 func GeneateName(clusterName string, role byte) string {
 	roleName := "master"
-	if role == RoleNode {
+	if role == api.RoleNode {
 		roleName = "node"
 	}
 	return fmt.Sprintf("%s-%s-%s", ClusterNamePrefix, clusterName, roleName)
@@ -50,11 +51,11 @@ func (q *qingcloudInstance) CreateInstances(opt *CreateInstancesOption) ([]*Inst
 		LoginMode:     service.String("keypair"),
 		InstanceName:  service.String(GeneateName(opt.Name, opt.Role)),
 	}
-	if opt.Role == RoleMaster {
+	if opt.Role == api.RoleMaster {
 		input.CPU = &opt.MasterCPU
 		input.Memory = &opt.MasterMemory
 		input.ImageID = &opt.MasterImageID
-	} else if opt.Role == RoleNode {
+	} else if opt.Role == api.RoleNode {
 		input.CPU = &opt.NodeCPU
 		input.Memory = &opt.NodeMemory
 		input.ImageID = &opt.NodeImageID
@@ -131,7 +132,7 @@ func (q *qingcloudInstance) DeleteInstances(instances []string) error {
 	}
 	output, err := q.instanceService.TerminateInstances(input)
 	if err != nil {
-		log.Error(err, "error in getting instances, retry again")
+		log.Error(err, "error in getting instances, pls try again")
 		return err
 	}
 	if *output.RetCode != 0 {
@@ -145,5 +146,28 @@ func (q *qingcloudInstance) DeleteInstances(instances []string) error {
 		return err
 	}
 	log.Info("Instances have been terminated")
+	return nil
+}
+
+func (q *qingcloudInstance) StopInstances(instances ...string) error {
+	input := &service.StopInstancesInput{
+		Instances: service.StringSlice(instances),
+	}
+	output, err := q.instanceService.StopInstances(input)
+	if err != nil {
+		log.Error(err, "error in stopping instances, pls try again")
+		return err
+	}
+	if *output.RetCode != 0 {
+		err := fmt.Errorf("err: %s", *output.Message)
+		log.Error(err, "error in stopping instances")
+		return err
+	}
+	log.Info("Waiting for instance terminating")
+	err = client.WaitJob(q.jobService, *output.JobID, DefaultCreateInstanceWait, time.Second*5)
+	if err != nil {
+		return err
+	}
+	log.Info("Instances has been stopped")
 	return nil
 }

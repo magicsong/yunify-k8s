@@ -7,6 +7,11 @@ const (
 	FlannelCNI                = "flannel"
 )
 
+const (
+	RoleMaster byte = iota
+	RoleNode
+)
+
 type CreateClusterOption struct {
 	ClusterName       string
 	KubernetesVersion string
@@ -29,4 +34,16 @@ type DeleteClusterOption struct {
 	ClusterName string
 	ForceDelete bool
 	Zone        string
+}
+
+type CreateImageOption struct {
+	BaseImage       string
+	ManifestFolders []string
+	Scripts         []string
+	ImageName       string
+	Role            byte
+	VxNet           string
+	UseExistKey     bool
+	Zone            string
+	DeleteMachine   bool
 }

@@ -1,14 +1,13 @@
 package instance
 
+import (
+	"github.com/magicsong/yunify-k8s/pkg/api"
+)
+
 type Instance struct {
 	ID string
 	IP string
 }
-
-const (
-	RoleMaster byte = iota
-	RoleNode
-)
 
 type CreateInstancesOption struct {
 	Name          string
@@ -17,11 +16,12 @@ type CreateInstancesOption struct {
 	Count         int
 	Role          byte
 	InstanceClass int
-	ImagesPreset
+	api.ImagesPreset
 }
 
 type Interface interface {
 	CreateInstances(*CreateInstancesOption) ([]*Instance, error)
 	DeleteInstances(instanceID []string) error
 	GetInstance(string) (*Instance, error)
+	StopInstances(...string) error
 }

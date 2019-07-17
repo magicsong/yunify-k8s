@@ -22,6 +22,7 @@ const KubeconfigFilePath = "/etc/kubernetes/admin.conf"
 type App interface {
 	RunCreate(*api.CreateClusterOption) error
 	RunDelete(*api.DeleteClusterOption) error
+	RunCreateImage(*api.CreateImageOption) error
 }
 
 func NewApp(configFile string) App {
@@ -131,7 +132,7 @@ func (a *app) runCreate(opt *api.CreateClusterOption) error {
 	//create master
 	var wg sync.WaitGroup
 	klog.Infoln("Creating Master")
-	if _, ok := instance.PresetKubernetes[opt.KubernetesVersion]; !ok {
+	if _, ok := api.PresetKubernetes[opt.KubernetesVersion]; !ok {
 		return fmt.Errorf(api.ErrorK8sVersionNotSupport, opt.KubernetesVersion)
 	}
 	machines := []string{}
@@ -142,8 +143,8 @@ func (a *app) runCreate(opt *api.CreateClusterOption) error {
 		Name:          opt.ClusterName,
 		VxNet:         opt.VxNet,
 		Count:         1,
-		Role:          instance.RoleMaster,
-		ImagesPreset:  instance.PresetKubernetes[opt.KubernetesVersion],
+		Role:          api.RoleMaster,
+		ImagesPreset:  api.PresetKubernetes[opt.KubernetesVersion],
 		InstanceClass: opt.InstanceClass,
 		SSHKeyID:      keyid,
 	}
@@ -169,8 +170,8 @@ func (a *app) runCreate(opt *api.CreateClusterOption) error {
 			Name:          opt.ClusterName,
 			VxNet:         opt.VxNet,
 			Count:         opt.NodeCount,
-			Role:          instance.RoleNode,
-			ImagesPreset:  instance.PresetKubernetes[opt.KubernetesVersion],
+			Role:          api.RoleNode,
+			ImagesPreset:  api.PresetKubernetes[opt.KubernetesVersion],
 			InstanceClass: opt.InstanceClass,
 			SSHKeyID:      keyid,
 		}
