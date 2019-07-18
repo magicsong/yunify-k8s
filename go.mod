@@ -10,6 +10,7 @@ require (
 	github.com/spf13/cobra v0.0.5
 	github.com/yunify/qingcloud-sdk-go v2.0.0-alpha.35.0.20190710082549-9b4f4db80863+incompatible
 	golang.org/x/crypto v0.0.0-20190701094942-4def268fd1a4
+	gopkg.in/yaml.v2 v2.2.2
 	k8s.io/client-go v11.0.0+incompatible
 	k8s.io/klog v0.3.3
 )

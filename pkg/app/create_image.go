@@ -2,13 +2,14 @@ package app
 
 import (
 	"fmt"
+	"os"
 	"os/exec"
 	"path"
 	"time"
 
-	"github.com/magicsong/yunify-k8s/pkg/instance"
-
 	"github.com/magicsong/yunify-k8s/pkg/api"
+	"github.com/magicsong/yunify-k8s/pkg/instance"
+	"github.com/magicsong/yunify-k8s/pkg/ssh"
 	"k8s.io/klog"
 )
 
@@ -38,17 +39,17 @@ func prepareLocalSSHBeforeTransfering(masterip string) error {
 func (a *app) createImageInstance(opt *api.CreateImageOption, sshkey string) (*instance.Instance, error) {
 	createInstanceOpt := &instance.CreateInstancesOption{
 		Name:          "ImageBuilder_" + opt.ImageName,
-		VxNet:         opt.VxNet,
+		VxNet:         opt.InstanceInfo.VxNet,
 		SSHKeyID:      sshkey,
 		Count:         1,
-		Role:          opt.Role,
+		Role:          opt.InstanceInfo.Role,
 		InstanceClass: 101,
 		ImagesPreset:  defaultImage,
 	}
-	if opt.Role == api.RoleMaster {
-		createInstanceOpt.MasterImageID = opt.BaseImage
+	if opt.InstanceInfo.Role == api.RoleMaster {
+		createInstanceOpt.MasterImageID = opt.InstanceInfo.BaseImage
 	} else {
-		createInstanceOpt.NodeImageID = opt.BaseImage
+		createInstanceOpt.NodeImageID = opt.InstanceInfo.BaseImage
 	}
 	instances, err := a.instanceIface.CreateInstances(createInstanceOpt)
 	if err != nil {
@@ -63,7 +64,7 @@ func (a *app) RunCreateImage(opt *api.CreateImageOption) error {
 		runningTime := time.Since(start)
 		klog.Infof("Finished, time cost(s): %d", runningTime/time.Second)
 	}()
-	err := a.init(opt.Zone)
+	err := a.init(opt.InstanceInfo.Zone)
 	if err != nil {
 		klog.Error("Falied to init command")
 		return err
@@ -73,7 +74,7 @@ func (a *app) RunCreateImage(opt *api.CreateImageOption) error {
 
 func (a *app) runCreateImage(opt *api.CreateImageOption) error {
 	klog.Info("Prepare ssh key")
-	keyid, err := a.prepareSSHKey(opt.UseExistKey)
+	keyid, err := a.prepareSSHKey(opt.InstanceInfo.UseExistKey)
 	if err != nil {
 		return err
 	}
@@ -91,14 +92,14 @@ func (a *app) runCreateImage(opt *api.CreateImageOption) error {
 		return err
 	}
 	klog.Info("Transfer files")
-	for _, folder := range opt.ManifestFolders {
+	for _, folder := range opt.Manifest.Folders {
 		err = transferFolder(inst.IP, folder)
 		if err != nil {
 			klog.Errorf("Failed to scp folder %s to remote", folder)
 			return err
 		}
 	}
-	for _, file := range opt.Scripts {
+	for _, file := range opt.Manifest.Scripts {
 		err = transferFile(inst.IP, file)
 		if err != nil {
 			klog.Errorf("Failed to scp file %s to remote", file)
@@ -106,12 +107,40 @@ func (a *app) runCreateImage(opt *api.CreateImageOption) error {
 		}
 	}
 	klog.Infof("Transfer done")
+	klog.Infof("Running script %s", opt.EntryPoint)
+	err = runScript(inst.IP, "/tmp/"+opt.EntryPoint)
+	if err != nil {
+		klog.Error("Failed to run script")
+		return err
+	}
+	klog.Info("Scripts run done, saving to image")
+	imageID, err := a.imageService.CreateImageBasedInstanceID(inst.ID, opt.ImageName)
+	if err != nil {
+		klog.Error("Failed to save image")
+		return err
+	}
 	if opt.DeleteMachine {
 		klog.Infof("Begin to tear down machine %s", inst.IP)
 		err = a.instanceIface.DeleteInstances([]string{inst.ID})
 		if err != nil {
 			klog.Warningf("Failed to delete machine %s, you have to  do it manually. Err: %s", inst.ID, err.Error())
 		}
+	}
+	klog.Infof("Done, image id is :[%s]", imageID)
+	return nil
+}
+
+func runScript(masterip string, script string) error {
+	session, err := ssh.QuickConnectUsingDefaultSSHKey(masterip)
+	if err != nil {
+		return err
+	}
+	session.Stdout = os.Stdout
+	session.Stderr = os.Stderr
+
+	err = session.Run("bash " + script)
+	if err != nil {
+		return err
 	}
 	return nil
 }

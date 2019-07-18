@@ -17,6 +17,5 @@ var createCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(createCmd)
 	createCmd.PersistentFlags().StringVarP(&vxnet, "vxnet", "x", "", "specify the vxnet")
-	createCmd.MarkPersistentFlagRequired("vxnet")
 	createCmd.PersistentFlags().BoolVar(&useExistKey, "use-old-key", true, "specify whether create or reuse former ssh key to connect machines")
 }

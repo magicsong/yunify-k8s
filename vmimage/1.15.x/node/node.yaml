@@ -1,0 +1,12 @@
+name: node-1.15-image
+deleteMachine: false
+entryPoint: "node-run.sh"
+instanceInfo:
+  baseImage: img-8n6cd3al
+  Role: 0
+  vxNet: vxnet-59dfakk
+  useExistKey: true
+  zone: ap2a
+manifest:
+  scripts:
+    - "./vmimage/1.15.x/master/master-run.sh"

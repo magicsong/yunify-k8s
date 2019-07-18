@@ -10,6 +10,7 @@ import (
 
 	accesskey "github.com/magicsong/yunify-k8s/pkg/access-key"
 	"github.com/magicsong/yunify-k8s/pkg/api"
+	"github.com/magicsong/yunify-k8s/pkg/image"
 	"github.com/magicsong/yunify-k8s/pkg/instance"
 	"github.com/magicsong/yunify-k8s/pkg/ssh"
 	"github.com/magicsong/yunify-k8s/pkg/sshkey"
@@ -35,6 +36,7 @@ type app struct {
 	instanceIface instance.Interface
 	sshKeyIface   sshkey.Interface
 	tagService    tag.Interface
+	imageService  image.Interface
 	configFile    string
 }
 
@@ -82,6 +84,8 @@ func (a *app) init(zone string) error {
 	a.sshKeyIface = sshkey.NewQingCloudKeyPairService(keyService, userid)
 	tagService, _ := qcService.Tag(zone)
 	a.tagService = tag.NewQingCloudTagService(tagService, userid)
+	imageSerivice, _ := qcService.Image(zone)
+	a.imageService = image.NewQingCloudImageService(instanceService, jobService, imageSerivice, userid)
 	return nil
 }
 

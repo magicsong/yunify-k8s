@@ -21,6 +21,7 @@ func init() {
 	createClusterCmd.Flags().IntVar(&createClusterOpt.InstanceClass, "class", 101, "instance class of machine,available values: 0, 1, 2, 3, 4, 5, 6, 100, 101, 200, 201, 300, 301")
 	createClusterCmd.Flags().BoolVarP(&createClusterOpt.ScpKubeConfigToLocal, "scp-kubeconfig", "s", false, "specify whether copy kubeconfig to local")
 	createClusterCmd.Flags().StringVar(&createClusterOpt.LocalKubeConfigPath, "kubeconfig-path", ".", "specify the path where kubeconfig copy to")
+	createCmd.MarkFlagRequired("vxnet")
 }
 
 var createClusterCmd = &cobra.Command{

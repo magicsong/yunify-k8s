@@ -37,13 +37,20 @@ type DeleteClusterOption struct {
 }
 
 type CreateImageOption struct {
-	BaseImage       string
-	ManifestFolders []string
-	Scripts         []string
-	ImageName       string
-	Role            byte
-	VxNet           string
-	UseExistKey     bool
-	Zone            string
-	DeleteMachine   bool
+	ImageName     string              `yaml:"name,omitempty"`
+	Manifest      CreateImageManifest `yaml:"manifest,omitempty"`
+	DeleteMachine bool                `yaml:"deleteMachine,omitempty"`
+	EntryPoint    string              `yaml:"entryPoint,omitempty"`
+	InstanceInfo  InstanceInfo        `yaml:"instanceInfo,omitempty"`
+}
+type CreateImageManifest struct {
+	Folders []string `yaml:"manifestFolders,omitempty,flow"`
+	Scripts []string `yaml:"scripts,omitempty,flow"`
+}
+type InstanceInfo struct {
+	BaseImage   string `yaml:"baseImage,omitempty"`
+	Role        byte   `yaml:"role,omitempty"`
+	VxNet       string `yaml:"vxNet,omitempty"`
+	UseExistKey bool   `yaml:"useExistKey,omitempty"`
+	Zone        string `yaml:"zone,omitempty"`
 }
