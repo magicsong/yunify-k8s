@@ -13,21 +13,22 @@ const (
 )
 
 type CreateClusterOption struct {
-	ClusterName       string
-	KubernetesVersion string
-	NodeCount         int
-	VxNet             string
-	InstanceClass     int
-	Zone              string
-	NetworkOption
-	UseExistKey          bool
-	ScpKubeConfigToLocal bool
-	LocalKubeConfigPath  string
+	ClusterName          string `yaml:"clusterName,omitempty"`
+	KubernetesVersion    string `yaml:"kubernetesVersion,omitempty"`
+	NodeCount            int    `yaml:"nodeCount,omitempty"`
+	VxNet                string `yaml:"vxNet,omitempty"`
+	InstanceClass        int    `yaml:"instanceClass,omitempty"`
+	Zone                 string `yaml:"zone,omitempty"`
+	NetworkOption        `yaml:"networkOption,omitempty"`
+	UseExistKey          bool   `yaml:"useExistKey,omitempty"`
+	ScpKubeConfigToLocal bool   `yaml:"scpKubeConfigToLocal,omitempty"`
+	LocalKubeConfigPath  string `yaml:"localKubeConfigPath,omitempty"`
 }
 
 type NetworkOption struct {
-	CNIName        string
-	PodNetWorkCIDR string
+	CNIName        string `yaml:"cniName,omitempty"`
+	PodNetWorkCIDR string `yaml:"podNetWorkCIDR,omitempty"`
+	Mode           string `yaml:"mode,omitempty"`
 }
 
 type DeleteClusterOption struct {

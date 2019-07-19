@@ -1,5 +1,3 @@
-#!/bin/bash
-
 swapoff -a
 sed '/exit/i\swapoff -a' -i /etc/rc.local
 sysctl net.bridge.bridge-nf-call-iptables=1
@@ -45,21 +43,12 @@ systemctl daemon-reload
 systemctl enable docker
 systemctl restart docker
 
-
 ##pull image
-kubeadm config images list
-kubeadm config images pull
-
-##pull CNI image
-mkdir -p CNI/flannel
-wget https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml -O CNI/flannel/kube-flannel.yml
+docker pull k8s.gcr.io/kube-proxy:v1.15.0
+docker pull k8s.gcr.io/pause:3.1
+docker pull k8s.gcr.io/coredns:1.3.1
 docker pull quay.io/coreos/flannel:v0.11.0-amd64
-
-mkdir -p CNI/calico
-wget https://docs.projectcalico.org/v3.8/manifests/calico.yaml -O CNI/calico/calico.yaml
-wget https://raw.githubusercontent.com/magicsong/yunify-k8s/master/vmimage/1.15.x/master/calico-etcd.yaml -O CNI/calico/calico-etcd.yaml
-docker pull calico/cni:v3.8.1
-docker pull calico/pod2daemon-flexvol:v3.8.1
-docker pull calico/node:v3.8.1
-docker pull calico/kube-controllers:v3.8.1
-
+docker pull calico/cni:v3.8.0
+docker pull calico/pod2daemon-flexvol:v3.8.0
+docker pull calico/node:v3.8.0
+docker pull calico/kube-controllers:v3.8.0

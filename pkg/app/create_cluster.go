@@ -110,6 +110,68 @@ func (a *app) prepareSSHKey(useExistKey bool) (string, error) {
 	return a.sshKeyIface.CreateSSHKey(api.SSHKeyName, string(output))
 }
 
+func (a *app) createAllMachines(opt *api.CreateClusterOption, keyid string) (*instance.Instance, []*instance.Instance, error) {
+	var wg sync.WaitGroup
+	klog.Infoln("Creating Master")
+	if _, ok := api.PresetKubernetes[opt.KubernetesVersion]; !ok {
+		return nil, nil, fmt.Errorf(api.ErrorK8sVersionNotSupport, opt.KubernetesVersion)
+	}
+	wg.Add(1)
+	var master *instance.Instance
+	errs := make([]error, 0)
+	createMasterOpt := &instance.CreateInstancesOption{
+		Name:          opt.ClusterName,
+		VxNet:         opt.VxNet,
+		Count:         1,
+		Role:          api.RoleMaster,
+		ImagesPreset:  api.PresetKubernetes[opt.KubernetesVersion],
+		InstanceClass: opt.InstanceClass,
+		SSHKeyID:      keyid,
+	}
+	go func() {
+		defer wg.Done()
+		instances, err := a.instanceIface.CreateInstances(createMasterOpt)
+		if err != nil {
+			errs = append(errs, err)
+			return
+		}
+		master = instances[0]
+		klog.Infof("Master creating done, id=%s, ip=%s", master.ID, master.IP)
+	}()
+	//creating nodes
+	wg.Add(1)
+	var nodes []*instance.Instance
+
+	go func() {
+		defer wg.Done()
+		createNodesOpt := &instance.CreateInstancesOption{
+			Name:          opt.ClusterName,
+			VxNet:         opt.VxNet,
+			Count:         opt.NodeCount,
+			Role:          api.RoleNode,
+			ImagesPreset:  api.PresetKubernetes[opt.KubernetesVersion],
+			InstanceClass: opt.InstanceClass,
+			SSHKeyID:      keyid,
+		}
+		instances, err := a.instanceIface.CreateInstances(createNodesOpt)
+		if err != nil {
+			errs = append(errs, err)
+			return
+		}
+		for _, machine := range instances {
+			nodes = append(nodes, machine)
+			klog.Infof("Nodes creating done, id=%s, ip=%s", machine.ID, machine.IP)
+		}
+	}()
+
+	klog.Infoln("Waiting for machines to start")
+	wg.Wait()
+	if len(errs) != 0 {
+		return nil, nil, fmt.Errorf("Creating Machines failed, errs: %+v", errs)
+	}
+	return master, nodes, nil
+}
+
 func (a *app) runCreate(opt *api.CreateClusterOption) error {
 	klog.Info("Prepare Tag")
 	tag := tagName(opt.ClusterName)
@@ -134,70 +196,16 @@ func (a *app) runCreate(opt *api.CreateClusterOption) error {
 		return err
 	}
 	//create master
-	var wg sync.WaitGroup
-	klog.Infoln("Creating Master")
-	if _, ok := api.PresetKubernetes[opt.KubernetesVersion]; !ok {
-		return fmt.Errorf(api.ErrorK8sVersionNotSupport, opt.KubernetesVersion)
+	master, nodes, err := a.createAllMachines(opt, keyid)
+	if err != nil {
+		klog.Error("Failed to create machines")
+		return err
 	}
-	machines := []string{}
-	wg.Add(1)
-	var master *instance.Instance
-	errs := make([]error, 0)
-	createMasterOpt := &instance.CreateInstancesOption{
-		Name:          opt.ClusterName,
-		VxNet:         opt.VxNet,
-		Count:         1,
-		Role:          api.RoleMaster,
-		ImagesPreset:  api.PresetKubernetes[opt.KubernetesVersion],
-		InstanceClass: opt.InstanceClass,
-		SSHKeyID:      keyid,
-	}
-
-	go func() {
-		defer wg.Done()
-		instances, err := a.instanceIface.CreateInstances(createMasterOpt)
-		if err != nil {
-			errs = append(errs, err)
-			return
-		}
-		master = instances[0]
-		machines = append(machines, master.ID)
-		klog.Infof("Master creating done, id=%s, ip=%s", master.ID, master.IP)
-	}()
-	//creating nodes
-	wg.Add(1)
-	var nodes []*instance.Instance
-
-	go func() {
-		defer wg.Done()
-		createNodesOpt := &instance.CreateInstancesOption{
-			Name:          opt.ClusterName,
-			VxNet:         opt.VxNet,
-			Count:         opt.NodeCount,
-			Role:          api.RoleNode,
-			ImagesPreset:  api.PresetKubernetes[opt.KubernetesVersion],
-			InstanceClass: opt.InstanceClass,
-			SSHKeyID:      keyid,
-		}
-		instances, err := a.instanceIface.CreateInstances(createNodesOpt)
-		if err != nil {
-			errs = append(errs, err)
-			return
-		}
-		for _, machine := range instances {
-			machines = append(machines, machine.ID)
-			nodes = append(nodes, machine)
-			klog.Infof("Nodes creating done, id=%s, ip=%s", machine.ID, machine.IP)
-		}
-	}()
-
-	klog.Infoln("Waiting for machines to start")
-	wg.Wait()
-	if len(errs) != 0 {
-		return fmt.Errorf("Creating Machines failed, errs: %+v", errs)
-	}
-
 	klog.Infoln("Tagging all machines")
+	machines := []string{master.ID}
+	for _, node := range nodes {
+		machines = append(machines, node.ID)
+	}
 	err = a.tagService.TagInstances(tagID, machines)
 	if err != nil {
 		return err
@@ -208,26 +216,20 @@ func (a *app) runCreate(opt *api.CreateClusterOption) error {
 		klog.Errorln("Failed to bootstrap master node")
 		return err
 	}
+
 	klog.Info("Applying CNI")
-	err = applyCNI(opt.CNIName, createMasterOpt.CNIYamlPath, master.IP)
+	err = applyCNI(opt, master.IP)
 	if err != nil {
 		klog.Errorf("Failed to apply CNI plugin %s", opt.CNIName)
 		return err
 	}
 	klog.Info("CNI is applied now")
-	klog.Info("Joining nodes")
-	for _, node := range nodes {
-		output, err := ssh.QuickConnectAndRun(node.IP, "swapoff -a; "+joinCmd)
-		if len(output) != 0 {
-			klog.V(1).Info(string(output))
-		}
-		if err != nil {
-			klog.Errorf("Failed to join %s %s to cluster", node.ID, node.IP)
-			return err
-		}
-		klog.Infof("%s has successfully joined the cluster", node.IP)
+	klog.Infof("Joining nodes, cmd: %s", joinCmd)
+	err = joinNodes(joinCmd, nodes)
+	if err != nil {
+		klog.Error("Failed to join nodes")
+		return err
 	}
-
 	if opt.ScpKubeConfigToLocal {
 		klog.Infoln("Transfer kubeconfig to local")
 		err = transferKubeconfigToLocal(master.IP, opt.LocalKubeConfigPath)
@@ -238,6 +240,30 @@ func (a *app) runCreate(opt *api.CreateClusterOption) error {
 		klog.Infof("kubeconfig has been copied to local, type 'export KUBECONFIG=%s/kubeconfig; kubectl cluster-info' to have a try", opt.LocalKubeConfigPath)
 	}
 	klog.Infof("Congratulations! The cluster is ready now, the master is [ID: %s,IP: %s], check it out", master.ID, master.IP)
+	return nil
+}
+
+func joinNodes(cmd string, nodes []*instance.Instance) error {
+	var wg sync.WaitGroup
+	errs := []error{}
+	for _, node := range nodes {
+		wg.Add(1)
+		go func(n *instance.Instance) {
+			defer wg.Done()
+			bytes, err := ssh.QuickConnectAndGetRunOutput(n.IP, cmd)
+			klog.V(2).Info(string(bytes))
+			if err != nil {
+				klog.Errorf("Failed to join %s %s to cluster", n.ID, n.IP)
+				errs = append(errs, err)
+			} else {
+				klog.Infof("%s has successfully joined the cluster", n.IP)
+			}
+		}(node)
+	}
+	wg.Wait()
+	if len(errs) != 0 {
+		return fmt.Errorf("Joining nodes failed, errs: %+v", errs)
+	}
 	return nil
 }
 
@@ -258,7 +284,7 @@ func bootstrapMaster(master *instance.Instance, opt *api.CreateClusterOption) (s
 	if err != nil {
 		return "", err
 	}
-	output, err := ssh.QuickConnectAndRun(master.IP, "swapoff -a;"+cmd)
+	output, err := ssh.QuickConnectAndGetRunOutput(master.IP, cmd)
 	defer klog.V(1).Infoln(string(output))
 	if err != nil {
 		klog.Errorln("Failed to run 'kubeadm init'")
@@ -282,21 +308,26 @@ func buildShellScripts(scripts []string) string {
 func GetKubeJoinFromOutput(output string) string {
 	output = strings.TrimSpace(output)
 	index := strings.LastIndex(output, "kubeadm join")
-	return output[index:]
+	output = output[index:]
+	if i := strings.Index(output, "\\"); i != -1 {
+		// new line exists
+		l := strings.Index(output, "--discovery-token-ca-cert-hash")
+		if l == -1 {
+			panic("cannot find kubeadm join")
+		}
+		return output[:i] + output[l:]
+	}
+	return output
 }
 
-func applyCNI(cni string, CNIYamlPath string, masterip string) error {
-	cmd := fmt.Sprintf("kubectl --kubeconfig=%s apply -f %s/%s/", KubeconfigFilePath, CNIYamlPath, cni)
-	bytes, err := ssh.QuickConnectAndRun(masterip, cmd)
-	defer klog.V(1).Info(string(bytes))
-	if err != nil {
-		return err
-	}
-	return nil
+func applyCNI(opt *api.CreateClusterOption, masterip string) error {
+	preset := api.PresetKubernetes[opt.KubernetesVersion]
+	cmd := fmt.Sprintf("bash %s -n %s --pod-cidr %s --mode %s", ScriptsLocation+preset.CNICmd, opt.CNIName, opt.PodNetWorkCIDR, opt.Mode)
+	return ssh.QuickConnectAndRun(masterip, cmd)
 }
 
 func transferKubeconfigToLocal(masterip, localPath string) error {
-	bytes, err := ssh.QuickConnectAndRun(masterip, "cat /etc/kubernetes/admin.conf")
+	bytes, err := ssh.QuickConnectAndGetRunOutput(masterip, "cat /etc/kubernetes/admin.conf")
 	if err != nil {
 		klog.Errorf(string(bytes))
 		return err

@@ -40,6 +40,7 @@ func (q *qingCloudImageService) CreateImageBasedInstanceID(instanceid string, im
 		klog.Error("error in capture  instances")
 		return "", err
 	}
+	time.Sleep(time.Second * 30)
 	klog.Info("Waiting for building image done")
 	err = client.WaitJob(q.jobService, *output.JobID, DefaultCreateImageWait, time.Second*5)
 	if err != nil {

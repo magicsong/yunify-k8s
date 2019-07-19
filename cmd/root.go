@@ -20,9 +20,8 @@ import (
 	"fmt"
 	"os"
 
-	"k8s.io/klog"
-
 	"github.com/spf13/cobra"
+	"k8s.io/klog"
 )
 
 var cfgFile string

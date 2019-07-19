@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net"
+	"os"
 	"os/exec"
 	"time"
 
@@ -11,7 +12,17 @@ import (
 	"k8s.io/client-go/util/homedir"
 )
 
-func QuickConnectAndRun(host, cmd string) ([]byte, error) {
+func QuickConnectAndRun(host, cmd string) error {
+	s, err := QuickConnectUsingDefaultSSHKey(host)
+	if err != nil {
+		return err
+	}
+	s.Stdout = os.Stdout
+	s.Stderr = os.Stderr
+	return s.Run(cmd)
+}
+
+func QuickConnectAndGetRunOutput(host, cmd string) ([]byte, error) {
 	s, err := QuickConnectUsingDefaultSSHKey(host)
 	if err != nil {
 		return nil, err

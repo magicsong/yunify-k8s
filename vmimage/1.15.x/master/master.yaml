@@ -3,10 +3,11 @@ deleteMachine: false
 entryPoint: "master-run.sh"
 instanceInfo:
   baseImage: img-8n6cd3al
-  Role: 0
+  role: 0
   vxNet: vxnet-59dfakk
   useExistKey: true
   zone: ap2a
 manifest:
   scripts:
-    - "./vmimage/1.15.x/build-scripts/master-run.sh"
+    - "./vmimage/1.15.x/master/master-run.sh"
+    - "./vmimage/1.15.x/master/cni.sh"

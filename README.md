@@ -22,13 +22,14 @@
 2. 创建集群，最小参数需要指定集群所在Vxnet
 ```bash
 # 默认配置是一个4核4G的基础型master和两个4核4G的基础型node，网络插件为calico，k8s版本为1.13.1
-qks create testk8s -x=vxnet-xxx
+qks create cluster testk8s -x=vxnet-xxx
 # 完整的用法请使用`qks create -h`
 ```
 3. 删除集群
 ```bash
-qks delete testk8s
+qks delete cluster testk8s
 ```
 
 ## 目前支持的版本
 + 1.13.x
++ 1.15.0

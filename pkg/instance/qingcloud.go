@@ -12,10 +12,10 @@ import (
 )
 
 const (
-	DefaultCreateInstanceWait = time.Minute
+	DefaultCreateInstanceWait = time.Minute * 2
 	DefaultRetryCount         = 3
 
-	ClusterNamePrefix = "YUNIFY_K8S_APP"
+	ClusterNamePrefix = "K8S-APP"
 )
 
 func GeneateName(clusterName string, role byte) string {
@@ -76,10 +76,12 @@ func (q *qingcloudInstance) CreateInstances(opt *CreateInstancesOption) ([]*Inst
 	}
 	log.V(1).Info("Machines starting successfully")
 	log.V(1).Info("Waiting for instance getting its ip")
+	time.Sleep(time.Second * 15)
 	result := make([]*Instance, 0)
 	for _, i := range output.Instances {
 		ins, err := client.WaitInstanceNetwork(q.instanceService, *i, DefaultCreateInstanceWait, time.Second*5)
 		if err != nil {
+			log.Error(nil, "Timeout waiting for ip of instance", "ID", *i)
 			return nil, err
 		}
 		result = append(result, &Instance{

@@ -13,6 +13,10 @@ import (
 	"k8s.io/klog"
 )
 
+const (
+	ScriptsLocation = "/root/scripts/"
+)
+
 var defaultImage = api.ImagesPreset{
 	NodeImageID:   "img-rfubqmqn",
 	MasterImageID: "img-ybttnmjg",
@@ -38,7 +42,7 @@ func prepareLocalSSHBeforeTransfering(masterip string) error {
 
 func (a *app) createImageInstance(opt *api.CreateImageOption, sshkey string) (*instance.Instance, error) {
 	createInstanceOpt := &instance.CreateInstancesOption{
-		Name:          "ImageBuilder_" + opt.ImageName,
+		Name:          "ImageBuilder-" + opt.ImageName,
 		VxNet:         opt.InstanceInfo.VxNet,
 		SSHKeyID:      sshkey,
 		Count:         1,
@@ -91,6 +95,11 @@ func (a *app) runCreateImage(opt *api.CreateImageOption) error {
 		klog.Error("Failed to add host to known_hosts")
 		return err
 	}
+	err = ssh.QuickConnectAndRun(inst.IP, "mkdir -p "+ScriptsLocation)
+	if err != nil {
+		klog.Error("Falied to create <scripts> folder")
+		return err
+	}
 	klog.Info("Transfer files")
 	for _, folder := range opt.Manifest.Folders {
 		err = transferFolder(inst.IP, folder)
@@ -108,7 +117,7 @@ func (a *app) runCreateImage(opt *api.CreateImageOption) error {
 	}
 	klog.Infof("Transfer done")
 	klog.Infof("Running script %s", opt.EntryPoint)
-	err = runScript(inst.IP, "/tmp/"+opt.EntryPoint)
+	err = runScript(inst.IP, ScriptsLocation+opt.EntryPoint)
 	if err != nil {
 		klog.Error("Failed to run script")
 		return err
@@ -159,7 +168,7 @@ func transferFolder(ip, folder string) error {
 
 func transferFile(ip, filePath string) error {
 	p := path.Base(filePath)
-	cmd := exec.Command("scp", filePath, fmt.Sprintf("root@%s:/tmp/%s", ip, p))
+	cmd := exec.Command("scp", filePath, fmt.Sprintf("root@%s:%s", ip, ScriptsLocation+p))
 	bytes, err := cmd.CombinedOutput()
 	klog.V(2).Info(string(bytes))
 	if err != nil {

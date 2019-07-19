@@ -37,7 +37,7 @@ var createImageCmd = &cobra.Command{
 				klog.Errorf("Failed to read yaml,err: %s", err.Error())
 				os.Exit(1)
 			}
-			err = yaml.Unmarshal(bytes, createImageOpt)
+			err = yaml.UnmarshalStrict(bytes, createImageOpt)
 			if err != nil {
 				klog.Errorf("Failed to parse yaml,err: %s", err.Error())
 				os.Exit(1)

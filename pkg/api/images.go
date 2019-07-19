@@ -11,6 +11,7 @@ type ImagesPreset struct {
 	MasterCPU         int
 	MasterMemory      int
 	CNIYamlPath       string
+	CNICmd            string
 }
 
 func init() {
@@ -24,5 +25,17 @@ func init() {
 		MasterCPU:         4,
 		MasterMemory:      4096,
 		CNIYamlPath:       "/root/CNI",
+		CNICmd:            "cni.sh",
+	}
+	PresetKubernetes["1.15.2"] = ImagesPreset{
+		KubernetesVersion: "1.15.2",
+		NodeImageID:       "img-kp1kue0l",
+		MasterImageID:     "img-79giiut8",
+		NodeCPU:           4,
+		NodeMemory:        4096,
+		MasterCPU:         4,
+		MasterMemory:      4096,
+		CNIYamlPath:       "/root/CNI",
+		CNICmd:            "cni.sh",
 	}
 }
