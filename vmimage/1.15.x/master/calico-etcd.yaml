@@ -21,7 +21,7 @@ metadata:
   name: calico-config
   namespace: kube-system
 data:
-  etcd_endpoints: https://127.0.0.1:2379
+  etcd_endpoints: https://{{masterip}}:2379
   etcd_ca: "/calico-secrets/etcd-ca"
   etcd_cert: "/calico-secrets/etcd-cert"
   etcd_key: "/calico-secrets/etcd-key"

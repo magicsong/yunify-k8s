@@ -43,6 +43,7 @@ mkdir -p $HOME/.kube
 cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
 chown $(id -u):$(id -g) $HOME/.kube/config
 
+MASTERIP=`hostname -I | cut -f1 -d" "`
 echo "CNI=${CNI}, pod-cidr=${POD_CIDR}"
 
 if [ $CNI == "calico" ];then
@@ -60,10 +61,7 @@ if [ $CNI == "calico" ];then
         etcdkey=`cat /etc/kubernetes/pki/apiserver-etcd-client.key | base64 -w 0`
         etcdcert=$(cat /etc/kubernetes/pki/apiserver-etcd-client.crt | base64 -w 0)
         etcdca=$(cat /etc/kubernetes/pki/etcd/ca.crt | base64 -w 0)
-        sed -i -e "s/{{etcd-key}}/$etcdkey/g" ${CNIPATH}/calico/calico-etcd.yaml
-        sed -i -e "s/{{etcd-cert}}/$etcdcert/g" ${CNIPATH}/calico/calico-etcd.yaml
-        sed -i -e "s/{{etcd-ca}}/$etcdca/g" ${CNIPATH}/calico/calico-etcd.yaml
-
+        sed -i -e "s/{{etcd-key}}/$etcdkey/g; s/{{etcd-cert}}/$etcdcert/g; s/{{etcd-ca}}/$etcdca/g; s/{{masterip}}/$MASTERIP/g" ${CNIPATH}/calico/calico-etcd.yaml
         echo "apply yaml"
         kubectl apply -f ${CNIPATH}/calico/calico-etcd.yaml
     else

@@ -1,8 +1,8 @@
 name: master-1.15-image
-deleteMachine: false
+deleteMachine: true
 entryPoint: "master-run.sh"
 instanceInfo:
-  baseImage: img-8n6cd3al
+  baseImage: img-9bhc0d8x
   role: 0
   vxNet: vxnet-59dfakk
   useExistKey: true
