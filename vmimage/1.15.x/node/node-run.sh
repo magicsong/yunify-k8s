@@ -44,11 +44,13 @@ systemctl enable docker
 systemctl restart docker
 
 ##pull image
-docker pull k8s.gcr.io/kube-proxy:v1.15.0
+docker pull k8s.gcr.io/kube-proxy:v1.15.2
 docker pull k8s.gcr.io/pause:3.1
 docker pull k8s.gcr.io/coredns:1.3.1
 docker pull quay.io/coreos/flannel:v0.11.0-amd64
-docker pull calico/cni:v3.8.0
-docker pull calico/pod2daemon-flexvol:v3.8.0
-docker pull calico/node:v3.8.0
-docker pull calico/kube-controllers:v3.8.0
+docker pull calico/cni:v3.8.1
+docker pull calico/pod2daemon-flexvol:v3.8.1
+docker pull calico/node:v3.8.1
+docker pull calico/kube-controllers:v3.8.1
+docker pull alpine:latest
+docker pull busybox:latest

@@ -1,8 +1,8 @@
 name: node-1.15-image
-deleteMachine: false
+deleteMachine: true
 entryPoint: "node-run.sh"
 instanceInfo:
-  baseImage: img-kp1kue0l
+  baseImage: img-sykyoovw
   role: 1
   vxNet: vxnet-59dfakk
   useExistKey: true

@@ -38,6 +38,56 @@ case $key in
 esac
 done
 
+
+function wait_calico () {
+    echo "sleep 20s"
+    sleep 20s
+    timeout=10
+    while true; do
+        if [ $timeout == 0 ]; then
+            echo "timeout waiting for calico started"
+            exit 1
+        fi 
+        IFS=$'\n'
+        quit="yes"
+        for item in $(kubectl get pod -n kube-system | grep calico)
+        do
+            echo $item | grep Running || quit=no
+        done
+        sleep 5s
+        if [ $quit == "yes" ]; then
+            echo "calico is ready"
+            break
+        fi
+        timeout=$((timeout-1))
+        echo "calico is not ready"
+    done
+}
+
+function wait_flannel () {
+    echo "sleep 20s"
+    sleep 20s
+    timeout=5
+    while true; do
+        if [ $timeout == 0 ]; then
+            echo "timeout waiting for flannel started"
+            exit 1
+        fi 
+        IFS=$'\n'
+        quit="yes"
+        for item in $(kubectl get pod -n kube-system | grep flannel)
+        do
+            echo $item | grep Running || quit=no
+        done
+        sleep 5s
+        if [ $quit == "yes" ]; then
+            echo "calico is ready"
+            break
+        fi
+        timeout=$((timeout-1))
+        echo "calico is not ready"
+    done
+}
 #do kubectl stuff here
 mkdir -p $HOME/.kube
 cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
@@ -64,6 +114,7 @@ if [ $CNI == "calico" ];then
         sed -i -e "s/{{etcd-key}}/$etcdkey/g; s/{{etcd-cert}}/$etcdcert/g; s/{{etcd-ca}}/$etcdca/g; s/{{masterip}}/$MASTERIP/g" ${CNIPATH}/calico/calico-etcd.yaml
         echo "apply yaml"
         kubectl apply -f ${CNIPATH}/calico/calico-etcd.yaml
+        wait_calico
     else
         printf "mode %s do not support or not recoginzed" $MODE
     fi
@@ -72,6 +123,7 @@ fi
 if [ $CNI == "flannel" ];then
     echo "apply yaml"
     kubectl apply -f ${CNIPATH}/${CNI}/${CNI}.yaml
+    wait_flannel
 fi 
 
 

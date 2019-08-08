@@ -18,7 +18,7 @@ func init() {
 	PresetKubernetes = make(map[string]ImagesPreset)
 	PresetKubernetes["1.13.1"] = ImagesPreset{
 		KubernetesVersion: "1.13.1",
-		NodeImageID:       "img-rfubqmqn",
+		NodeImageID:       "img-sykyoovw",
 		MasterImageID:     "img-ybttnmjg",
 		NodeCPU:           4,
 		NodeMemory:        4096,
@@ -27,10 +27,11 @@ func init() {
 		CNIYamlPath:       "/root/CNI",
 		CNICmd:            "cni.sh",
 	}
+
 	PresetKubernetes["1.15.2"] = ImagesPreset{
 		KubernetesVersion: "1.15.2",
-		NodeImageID:       "img-kp1kue0l",
-		MasterImageID:     "img-vp5f2n05",
+		NodeImageID:       "img-sykyoovw",
+		MasterImageID:     "img-m3m5ox89",
 		NodeCPU:           4,
 		NodeMemory:        4096,
 		MasterCPU:         4,
