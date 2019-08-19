@@ -29,6 +29,7 @@ type NetworkOption struct {
 	CNIName        string `yaml:"cniName,omitempty"`
 	PodNetWorkCIDR string `yaml:"podNetWorkCIDR,omitempty"`
 	Mode           string `yaml:"mode,omitempty"`
+	SkipCNI        bool   `yaml:"skipCNI,omitempty"`
 }
 
 type DeleteClusterOption struct {

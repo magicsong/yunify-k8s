@@ -63,3 +63,24 @@ docker pull calico/pod2daemon-flexvol:v3.8.1
 docker pull calico/node:v3.8.1
 docker pull calico/kube-controllers:v3.8.1
 
+#install calicoctl
+install_calicoctl=0
+command -v calicoctl >/dev/null 2>&1 ||  install_calicoctl=1
+if [ $install_calicoctl == 1 ]; then
+  curl -O -L  https://github.com/projectcalico/calicoctl/releases/download/v3.8.1/calicoctl
+  chmod +x calicoctl
+  mv calicoctl /usr/local/bin/
+fi
+
+mkdir -p /etc/calico
+cat <<EOF > /etc/calico/calicoctl.cfg
+apiVersion: projectcalico.org/v3
+kind: CalicoAPIConfig
+metadata:
+spec:
+  datastoreType: "etcdv3"
+  etcdEndpoints: "https://localhost:2379"
+  etcdKeyFile: /etc/kubernetes/pki/apiserver-etcd-client.key
+  etcdCertFile: /etc/kubernetes/pki/apiserver-etcd-client.crt
+  etcdCACertFile: /etc/kubernetes/pki/etcd/ca.crt
+EOF
