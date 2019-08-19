@@ -1,0 +1,11 @@
+clusterName: hostnic-test
+kubernetesVersion: 1.15.2
+nodeCount: 2
+vxNet: vxnet-59dfakk
+instanceClass: 101
+networkOption:
+  skipCNI: true
+useExistKey: true
+scpKubeConfigToLocal: true
+localKubeConfigPath: "."
+zone: ap2a

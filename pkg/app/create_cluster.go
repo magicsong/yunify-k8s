@@ -216,14 +216,17 @@ func (a *app) runCreate(opt *api.CreateClusterOption) error {
 		klog.Errorln("Failed to bootstrap master node")
 		return err
 	}
-
-	klog.Info("Applying CNI")
-	err = applyCNI(opt, master.IP)
-	if err != nil {
-		klog.Errorf("Failed to apply CNI plugin %s", opt.CNIName)
-		return err
+	if !opt.SkipCNI {
+		klog.Info("Applying CNI")
+		err = applyCNI(opt, master.IP)
+		if err != nil {
+			klog.Errorf("Failed to apply CNI plugin %s", opt.CNIName)
+			return err
+		}
+		klog.Info("CNI is applied now")
+	} else {
+		klog.Info("Skipping creating CNI")
 	}
-	klog.Info("CNI is applied now")
 	klog.Infof("Joining nodes, cmd: %s", joinCmd)
 	err = joinNodes(joinCmd, nodes)
 	if err != nil {
