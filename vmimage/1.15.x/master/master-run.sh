@@ -67,6 +67,7 @@ docker pull calico/kube-controllers:v3.8.1
 install_calicoctl=0
 command -v calicoctl >/dev/null 2>&1 ||  install_calicoctl=1
 if [ $install_calicoctl == 1 ]; then
+  echo "install calicoctl"
   curl -O -L  https://github.com/projectcalico/calicoctl/releases/download/v3.8.1/calicoctl
   chmod +x calicoctl
   mv calicoctl /usr/local/bin/

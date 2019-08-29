@@ -24,6 +24,7 @@ type App interface {
 	RunCreate(*api.CreateClusterOption) error
 	RunDelete(*api.DeleteClusterOption) error
 	RunCreateImage(*api.CreateImageOption) error
+	RunList(string) error
 }
 
 func NewApp(configFile string) App {
@@ -41,7 +42,7 @@ type app struct {
 }
 
 func tagName(name string) string {
-	return fmt.Sprintf("K8S-Cluster-%s", name)
+	return fmt.Sprintf("%s%s", api.ClusterTagPrefix, name)
 }
 
 func (a *app) validateCreateInput(opt *api.CreateClusterOption) error {

@@ -10,4 +10,5 @@ type Interface interface {
 	DeleteTag(string) error
 	GetTagClusterByName(string) (*TagCluster, error)
 	TagInstances(string, []string) error
+	GetTags(name string) ([]string, error)
 }

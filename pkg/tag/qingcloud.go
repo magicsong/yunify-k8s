@@ -2,6 +2,7 @@ package tag
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/yunify/qingcloud-sdk-go/service"
 	"k8s.io/klog"
@@ -51,6 +52,29 @@ func (q *qingcloudTagService) DeleteTag(id string) error {
 		return err
 	}
 	return nil
+}
+
+func (q *qingcloudTagService) GetTags(name string) ([]string, error) {
+	input := &service.DescribeTagsInput{
+		SearchWord: &name,
+		Verbose:    service.Int(1),
+	}
+	output, err := q.tagService.DescribeTags(input)
+	if err != nil {
+		klog.Error("Failed to initialize go sdk")
+		return nil, err
+	}
+	if *output.RetCode != 0 {
+		err := fmt.Errorf("Error in getting tag, err: %s", *output.Message)
+		return nil, err
+	}
+	res := make([]string, 0)
+	for _, tag := range output.TagSet {
+		if *tag.Owner == q.userID && strings.HasPrefix(*tag.TagName, name) {
+			res = append(res, *tag.TagName)
+		}
+	}
+	return res, nil
 }
 
 func (q *qingcloudTagService) GetTagClusterByName(name string) (*TagCluster, error) {

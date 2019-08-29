@@ -5,6 +5,7 @@ const (
 	SSHKeyName                = "DO_NOT_REMOVE_K8S_KEY"
 	CalicoCNI                 = "calico"
 	FlannelCNI                = "flannel"
+	ClusterTagPrefix          = "K8S-Cluster-"
 )
 
 const (

@@ -31,7 +31,7 @@ func init() {
 	PresetKubernetes["1.15.2"] = ImagesPreset{
 		KubernetesVersion: "1.15.2",
 		NodeImageID:       "img-sykyoovw",
-		MasterImageID:     "img-m3m5ox89",
+		MasterImageID:     "img-sx11cm1v",
 		NodeCPU:           4,
 		NodeMemory:        4096,
 		MasterCPU:         4,
