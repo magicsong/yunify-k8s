@@ -39,4 +39,15 @@ func init() {
 		CNIYamlPath:       "/root/CNI",
 		CNICmd:            "cni.sh",
 	}
+	PresetKubernetes["1.15.5"] = ImagesPreset{
+		KubernetesVersion: "1.15.5",
+		NodeImageID:       "img-sykyoovw",
+		MasterImageID:     "img-597d750m",
+		NodeCPU:           2,
+		NodeMemory:        2048,
+		MasterCPU:         2,
+		MasterMemory:      4096,
+		CNIYamlPath:       "/root/CNI",
+		CNICmd:            "cni.sh",
+	}
 }

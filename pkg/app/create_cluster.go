@@ -276,7 +276,7 @@ func generateKubeadmInitCmd(opt api.NetworkOption, version string) (string, erro
 		return "", fmt.Errorf("Must specify a network for pod")
 	}
 
-	if opt.CNIName == api.CalicoCNI || opt.CNIName == api.FlannelCNI {
+	if opt.CNIName == api.CalicoCNI || opt.CNIName == api.FlannelCNI || opt.CNIName == api.HostnicCNI {
 		return fmt.Sprintf("kubeadm init --pod-network-cidr=%s --kubernetes-version=v%s", opt.PodNetWorkCIDR, version), nil
 	}
 

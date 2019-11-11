@@ -1,7 +1,7 @@
 clusterName: calico-etcd
 kubernetesVersion: 1.15.2
 nodeCount: 2
-vxNet: vxnet-59dfakk
+vxNet: 	vxnet-lddzg8e
 instanceClass: 101
 networkOption:
   cniName: calico

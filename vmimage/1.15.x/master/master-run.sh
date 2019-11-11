@@ -52,7 +52,7 @@ kubeadm config images pull
 
 ##pull CNI image
 mkdir -p CNI/flannel
-wget https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml -O CNI/flannel/kube-flannel.yml
+wget https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml -O CNI/flannel/flannel.yaml
 docker pull quay.io/coreos/flannel:v0.11.0-amd64
 
 mkdir -p CNI/calico

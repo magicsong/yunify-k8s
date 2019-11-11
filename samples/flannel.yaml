@@ -1,12 +1,11 @@
-clusterName: hostnic-test
-kubernetesVersion: 1.15.5
+clusterName: flannel-k8s
+kubernetesVersion: 1.15.2
 nodeCount: 2
 vxNet: vxnet-59dfakk
 instanceClass: 101
 networkOption:
-  skipCNI: true
-  podNetWorkCIDR: 192.168.0.0/16
-  cniName: hostnic
+  cniName: flannel
+  podNetWorkCIDR: 10.17.0.0/16
 useExistKey: true
 scpKubeConfigToLocal: true
 localKubeConfigPath: "."
